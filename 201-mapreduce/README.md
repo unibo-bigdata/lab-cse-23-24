@@ -25,7 +25,11 @@ The cluster will be created in 5 to 10 minutes.
 
 ### Troubleshooting
 
-*The cluster couldn't be created due to the following error: "The requested instance type m5.xlarge is not supported in the requested availability zone."* In the Hardware configuration, try a different EC2 subnet.
+>*The cluster couldn't be created due to the following error: "The requested instance type m5.xlarge is not supported in the requested availability zone."*  
+> In the "Networking" options, choose the subnet that corresponds to us-east-1a (or, if that doesn't work either, choose another one until it works).
+>
+>*Your cluster has terminated because the Availability Zone(s) [us-east-1e] don't support the [m5.xlarge] instance type(s) that you requested.*  
+> In the "Networking" options, choose the subnet that corresponds to us-east-1a (or, if that doesn't work either, choose another one until it works).
 
 ## 201-2 Connect via SSH and WinSCP to the master node
 
