@@ -6,20 +6,25 @@ The goal of this lab is to create an Elastic Map Reduce (EMR) cluster and use it
 
 EMR is AWS's service to provision clusters of machines pre-configured with applications in the Hadoop stack.
 
-From your *Console home*, click on "Services" > "EMR", then "Create cluster".Click on "Advanced options" (top of the page) to be able to set all important configuration parameters.
+From your *Console home*, click on "Services" > "EMR", then "Create cluster".
+  - Name: whichever you prefer; the same name can be re-used several times
   - Software
     - Choose the latest EMR version
     - Services: Hadoop (exclude all others)
-    - After last step completes: Clusters enters waiting state
   - Hardware
-    - 1 Master node, On demand, m5.xlarge (default)
+    - 1 Primary node, On demand, m5.xlarge (default)
     - 2 Core nodes, On demand, m5.xlarge (default)
-    - Disable automatic termination
+    - 0 Task nodes (remove the instance group)
+  - Networking
+    - In the subnet, click 'Browse' and choose 'us-east-1a'
   - General
-    - Name: whichever you prefer; the same name can be re-used several times
     - Enable log registration
+    - Set the manual termination of the cluster
   - Security
     - Choose the *Key pair* created in 101-3
+  - Identity Roles and Access Management (IAM)
+    - Amazon EMR Service Role: use **EMR_DefaultRole**
+    - Amazon EMR EC2 Instance Profile: use **EMR_EC2_DefaultRole**
 
 The cluster will be created in 5 to 10 minutes.
 
@@ -37,11 +42,9 @@ Once the cluster is up-and-running, you first need to allow SSH access to the ma
 
 - From the *EMR service console*, open the list of created clusters, then open the cluster currently running
   - Located the "Master's Public DNS" in the Summary - it will be used later
-  - Under "Security and Access", click on the security group of the master node (ElasticMapReduce-master)
-    - In the newly opened page, select again the ID of the security group of the master node (ElasticMapReduce-master)
-    - Click on "Edit inbound rules"
-    - Add an SSH rule that allows connections to port 22 from any IPv4
-
+  - In the "Properties" tab, under "Network and security", open "EC2 Security groups (firewall)" and click on the security group of the primary node
+  - In the newly opened page, edit the entrance rules to add a new one (type: SSH: source: Anywhere-IPV4), then save
+    
 Now open **Putty** and enter the following configuration.
 
 - Host Name: hadoop@ec2-xxx-xxx-xxx-xxx.compute-1.amazonaws.com
@@ -59,6 +62,14 @@ Now open **WinSCP** and enter the following configuration (similar to Putty).
 
 **Notice**: new clusters will be created in each of the following classes; thus, the IP of the Master's Public DNS will need to be changed as well (in both Putty and WinSCP). 
 
+### Troubleshooting
+
+>*No supported authentication methods available (server sent: publickey,gssapi-keyex,gssapi-with-mic)*  
+> There are multiple possiblities:
+> - You forgot to indicate a key pair when creating the cluster (or you chose the wrong one)
+> - You did not select the key file in the SSH/WinSCP connection (or you chose the wrong one)
+> - You need to change the permissions on the key file to allow read/write only for the owner; to do this, use the Git Bash console in Windows and enter ```chmod 400 myfile.ppk```
+
 
 ## 201-3 Connect to services' GUIs through SSH tunnels
 
@@ -75,7 +86,7 @@ Setup tunnels for ports 8088 (YARN), 19888, and 20888 (Spark).
 - *Save the configuration*
 - Open the connection
 
-The GUIs are now available under [localhost:8088](), [localhost:19888](), and [localhost:20888]().
+The GUIs are now available under [localhost:8088](localhost:8088), [localhost:19888](localhost:19888), and [localhost:20888](localhost:20888).
 
 ## 201-4 Create and run the MapReduce application
 
@@ -135,7 +146,7 @@ There are two main ways to run MapReduce jobs: scheduling a "step" on the EMR cl
 - On the running cluster page, select the "Steps" tab and add a new step
   - Enter the location of jar file on S3
   - Enter the list of parameters
-    - Example: ```exercise1.WordCount s3a://unibo-bd2223-egallinucci s3a://unibo-bd2223-egallinucci/datasets/capra.txt s3a://unibo-bd2223-egallinucci/mapreduce/wordcount-output```
+    - Example: ```exercise1.WordCount s3a://unibo-bd2324-egallinucci s3a://unibo-bd2324-egallinucci/datasets/capra.txt s3a://unibo-bd2324-egallinucci/mapreduce/wordcount-output```
   - In case of failure, indicate to keep the cluster running
 - Once you add it, the step will start immediately; however, it will take a long time for the job to start!
 
@@ -144,12 +155,12 @@ There are two main ways to run MapReduce jobs: scheduling a "step" on the EMR cl
 - Connect to the cluster via WinSCP (see 201-3) and copy/paste the *BD-201-mapreduce.jar* to ```/home/hadoop```
 - Connect to the cluster via SSH (see 201-3)
 - Run the following command: ```hadoop jar BD-201-mapreduce.jar <parameters>```, where ```<parameters>``` is the same list from the EMR step above
-  - Example: ```hadoop jar BD-201-mapreduce.jar exercise1.WordCount s3a://unibo-bd2223-egallinucci s3a://unibo-bd2223-egallinucci/datasets/capra.txt s3a://unibo-bd2223-egallinucci/mapreduce/wordcount-output```
+  - Example: ```hadoop jar BD-201-mapreduce.jar exercise1.WordCount s3a://unibo-bd2324-egallinucci s3a://unibo-bd2324-egallinucci/datasets/capra.txt s3a://unibo-bd2324-egallinucci/mapreduce/wordcount-output```
 
 ### Check the results
 
-- Resource Manager: [localhost:8088]()
-- History server: [localhost:19888]()
+- Resource Manager: [localhost:8088](localhost:8088)
+- History server: [localhost:19888](localhost:19888)
 - Take a look at the output files in S3
 
 
@@ -168,9 +179,9 @@ Run the various jobs and check the code to understand how they work, what they r
 Focus on ```exercise3.MaxTemperatureWithCombiner``` and execute it on the different weather datasets (weather-sample1.txt, weather-sample10.txt, and weather-full.txt).
 
 - How much time does it take?
-- The power of the EMR cluster can be increase by adding new Task nodes
+- The power of the EMR cluster can be increased by adding new Task nodes
   - Go to the cluster homepage
-  - Select the Hardware tab
+  - Select the Instances (Hardware) tab
   - Either *resize* the Core instances, or *add* new Task instances
     - Check [this page](https://aws.amazon.com/it/ec2/pricing/on-demand/) for information about hardware configuration and price for different machine types
     - Resizing/Adding resources requires time (5-10 minutes)
